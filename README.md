@@ -6,3 +6,4 @@ This [GitHub repository](https://github.com/cosmin-ticu/DS2-neural-nets) contain
 
 Special credits go to:
 * [Zoltan Papp](https://github.com/pappzoltan) - provided skeleton of the codes, functions and guidance to conduct the data analysis during his course
+* [Kata Sule](https://github.com/sulekata) - provided help with creating models and functions

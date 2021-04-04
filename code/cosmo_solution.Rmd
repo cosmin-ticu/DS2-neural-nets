@@ -1,0 +1,321 @@
+---
+title: "nuts"
+author: "Cosmin Catalin Ticu"
+date: "4/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = T,
+	message = FALSE,
+	warning = FALSE,
+	cache = T)
+rm(list = ls())
+set.seed(1234)
+library(keras)
+library(here)
+```
+
+# 1. Fashion MNIST data
+
+## a. Show some example images from the data.
+
+```{r}
+# Task 1 ------------------------------------------------------------------
+
+# import data
+fashion_mnist <- dataset_fashion_mnist()
+x_train <- fashion_mnist$train$x
+y_train <- fashion_mnist$train$y
+x_test <- fashion_mnist$test$x
+y_test <- fashion_mnist$test$y
+
+# a, Show some example images from the data.
+
+# split the canvas into rows and columns
+par(mfrow = c(2, 3))
+
+# plot the first 6 images
+for (i in 1:6){
+  image(
+    x_train[i,,],
+    col = gray.colors(255), xlab = y_train[i], ylab = ""
+  )
+}
+```
+
+## b.Train a fully connected deep network to predict items.
+
+```{r}
+# b, Train a fully connected deep network to predict items.
+
+# split train data into train and validation sets
+# get indexes
+set.seed(1234)
+train_indices <- sample(seq(nrow(x_train)), 10000)
+
+# split x
+data_train_x <- x_train[train_indices,, ]
+data_valid_x <- x_train[-train_indices,, ]
+
+# split y
+data_train_y <- y_train[train_indices]
+data_valid_y <- y_train[-train_indices]
+
+# rescale x
+data_train_x <- as.matrix(as.data.frame.array(data_train_x)) / 255
+data_valid_x <- as.matrix(as.data.frame.array(data_valid_x)) / 255
+data_test_x <- as.matrix(as.data.frame.array(x_test)) / 255
+
+# one-hot encoding for y
+data_train_y <- to_categorical(data_train_y, 10)
+data_valid_y <- to_categorical(data_valid_y, 10)
+data_test_y <- to_categorical(y_test, 10)
+
+### BASELINE MODEL
+# create model object - baseline Janos
+model_janos <- keras_model_sequential()
+
+# add layers to the model
+model_janos %>%
+  layer_dense(units = 128, activation = 'relu', input_shape = c(784)) %>% # 784 pixels
+  layer_dropout(rate = 0.3) %>% # we leave 30% of the node weights unchanged
+  layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
+
+# check model summary
+summary(model_janos)
+```
+
+```{r}
+# set loss function and the metrics we want to see
+compile(
+  model_janos,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# fit model
+set.seed(1234)
+janosRDS_NN <- fit(
+  model_janos, data_train_x, data_train_y,
+  epochs = 30, batch_size = 128,
+  validation_data = list(data_valid_x, data_valid_y)
+)
+
+saveRDS(janosRDS_NN, file = paste0(here(),"/data/janosRDS_NN.rds"))
+janosRDS_NN <- readRDS(file = paste0(here(),"/data/janosRDS_NN.rds"))
+
+# evaluate model
+model_janos_eval <- as.data.frame(evaluate(model_janos, data_valid_x, data_valid_y))
+
+### FIRST MODEL
+# create model object
+model1 <- keras_model_sequential()
+
+# add layers to the model
+model1 %>%
+  layer_dense(units = 28, activation = 'relu', input_shape = c(784)) %>% # 784 pixels
+  layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
+
+# check model summary
+# summary(model1)
+
+# set loss function and the metrics we want to see
+compile(
+  model1,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# fit model
+set.seed(1234)
+model1RDS_NN <- fit(
+  model1, data_train_x, data_train_y,
+  epochs = 30, batch_size = 128,
+  validation_data = list(data_valid_x, data_valid_y)
+)
+
+saveRDS(model1RDS_NN, file = "/data/model1RDS_NN.rds")
+model1RDS_NN <- readRDS(file = "/data/model1RDS_NN.rds")
+
+# evaluate model
+model1_eval <- as.data.frame(evaluate(model1, data_valid_x, data_valid_y))
+
+### SECOND MODEL
+# create model object
+model2 <- keras_model_sequential()
+
+# add layers to the model
+model2 %>%
+  layer_dense(units = 28, activation = 'relu', input_shape = c(784)) %>% # 784 pixels
+  layer_dense(units = 28, activation = 'sigmoid') %>%
+  layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
+
+# check model summary
+# summary(model2)
+
+# set loss function and the metrics we want to see
+compile(
+  model2,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# fit model
+set.seed(1234)
+model2RDS_NN <- fit(
+  model2, data_train_x, data_train_y,
+  epochs = 30, batch_size = 128,
+  validation_data = list(data_valid_x, data_valid_y)
+)
+
+saveRDS(model2RDS_NN, file = paste0(here(),"/data/model2RDS_NN.rds"))
+model2RDS_NN <- readRDS(file = paste0(here(),"/data/model2RDS_NN.rds"))
+
+# evaluate model
+model2_eval <- as.data.frame(evaluate(model2, data_valid_x, data_valid_y))
+
+
+### THIRD MODEL - TOO COMPLEX --> OVERFIT
+# create model object
+model3 <- keras_model_sequential()
+
+# add layers to the model
+model3 %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(784)) %>% # 784 pixels
+  layer_dense(units = 100, activation = 'sigmoid') %>%
+  layer_dense(units = 100, activation = 'tanh') %>% # tangential function
+  layer_dropout(rate = 0.3) %>% # we leave 30% of the node weights unchanged
+  layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
+
+# check model summary
+# summary(model3)
+
+# set loss function and the metrics we want to see
+compile(
+  model3,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# fit model
+set.seed(1234)
+model3RDS_NN <- fit(
+  model3, data_train_x, data_train_y,
+  epochs = 30, batch_size = 128,
+  validation_data = list(data_valid_x, data_valid_y)
+)
+
+saveRDS(model3RDS_NN, file = paste0(here(),"/data/model3RDS_NN.rds"))
+model3RDS_NN <- readRDS(file = paste0(here(),"/data/model3RDS_NN.rds"))
+
+# evaluate model
+model3_eval <- as.data.frame(evaluate(model3, data_valid_x, data_valid_y))
+
+### FOURTH MODEL
+# create model object
+model4 <- keras_model_sequential()
+
+# add layers to the model
+model4 %>%
+  layer_dense(units = 100, activation = 'sigmoid', input_shape = c(784)) %>%
+  layer_dense(units = 100, activation = 'tanh') %>% # tangential function
+  layer_dropout(rate = 0.7) %>% # we leave 70% of the node weights unchanged
+  layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
+
+# check model summary
+# summary(model4)
+
+# set loss function and the metrics we want to see
+compile(
+  model4,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# fit model
+set.seed(1234)
+model4RDS_NN <- fit(
+  model4, data_train_x, data_train_y,
+  epochs = 30, batch_size = 128,
+  validation_data = list(data_valid_x, data_valid_y)
+)
+
+saveRDS(model4RDS_NN, file = paste0(here(),"/data/model4RDS_NN.rds"))
+model4RDS_NN <- readRDS(file = paste0(here(),"/data/model4RDS_NN.rds"))
+
+# evaluate model
+model4_eval <- as.data.frame(evaluate(model4, data_valid_x, data_valid_y))
+
+### FIFTH MODEL --> signs of overfitting
+# create model object
+model5 <- keras_model_sequential()
+
+# add layers to the model
+model5 %>%
+  layer_dense(units = 100, activation = 'softplus', input_shape = c(784)) %>% 
+  # not really necessary because inputs are not negative
+  layer_dense(units = 100, activation = 'relu') %>% # standard bent linear model
+  layer_dropout(rate = 0.01) %>% # we leave 70% of the node weights unchanged
+  layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
+
+# check model summary
+# summary(model5)
+
+# set loss function and the metrics we want to see
+compile(
+  model5,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# fit model
+set.seed(1234)
+model5RDS_NN <- fit(
+  model5, data_train_x, data_train_y,
+  epochs = 30, batch_size = 128,
+  validation_data = list(data_valid_x, data_valid_y)
+)
+
+saveRDS(model5RDS_NN, file = paste0(here(),"/data/model5RDS_NN.rds"))
+model5RDS_NN <- readRDS(file = paste0(here(),"/data/model5RDS_NN.rds"))
+
+# evaluate model
+model5_eval <- as.data.frame(evaluate(model5, data_valid_x, data_valid_y))
+
+# model comparison
+model_comparison <- cbind(model_janos_eval, model1_eval, model2_eval, model3_eval, model4_eval, model5_eval)
+
+colnames(model_comparison) <- c('baseline', 'model1', 'model2', 'model3', 'model4', 'model5')
+```
+
+```{r}
+knitr::kable(model_comparison, caption = 'NN model comparison', digits = 2) %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+
+plot(model5RDS_NN, main = 'Best NN Model Performance')
+```
+
+
+## c. Evaluate the model on the test set. How does test error compare to validation error?
+
+## d. Try building a convolutional neural network and see if you can improve test set performance.
+
+# 2. Hot dog or not hot dog?
+
+## a. Pre-process data so that it is acceptable by Keras (set folder structure, bring images to the same size, etc).
+
+## b. Estimate a convolutional neural network to predict if an image contains a hot dog or not. Evaluate your model on the test set.
+
+## c. Could data augmentation techniques help with achieving higher predictive accuracy? Try some augmentations that you think make sense and compare
+
+## d. Try to rely on some pre-built neural networks to aid prediction. Can you achieve a better performance using transfer learning for this problem?
+
+

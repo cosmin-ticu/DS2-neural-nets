@@ -1,6 +1,7 @@
 rm(list = ls())
 set.seed(1234)
 library(keras)
+library(kableExtra)
 # install_keras()
 
 # Task 1 ------------------------------------------------------------------
@@ -315,9 +316,9 @@ plot(model5RDS_NN)
 
 model5_eval_test <- as.data.frame(evaluate(model5, data_test_x, data_test_y))
 
-final_model_comparison <- rbind(as.data.frame(evaluate(model5, data_train_x, data_train_y)) ,model5_eval, model5_eval_test)
+final_model_comparison <- cbind(as.data.frame(evaluate(model5, data_train_x, data_train_y)) ,model5_eval, model5_eval_test)
 
-rownames(final_model_comparison) <- c('training set', 'validation set', 'test set')
+names(final_model_comparison) <- c('training set', 'validation set', 'test set')
 
 knitr::kable(final_model_comparison, caption = 'Final model comparison across data partitions', digits = 2) %>% 
   kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
@@ -594,9 +595,9 @@ cnn_model5 <- load_model_hdf5("data/cnn_model5.h5")
 model5_cnn_eval <- as.data.frame(evaluate(cnn_model5, data_valid_x, data_valid_y))
 
 # model comparison
-model_comparison_cnn <- rbind(model_janos_cnn_eval, model1_cnn_eval, model2_cnn_eval, model3_cnn_eval, model4_cnn_eval, model5_cnn_eval)
+model_comparison_cnn <- cbind(model_janos_cnn_eval, model1_cnn_eval, model2_cnn_eval, model3_cnn_eval, model4_cnn_eval, model5_cnn_eval)
 
-rownames(model_comparison_cnn) <- c('baseline', 'model1', 'model2', 'model3', 'model4', 'model5')
+names(model_comparison_cnn) <- c('baseline', 'model1', 'model2', 'model3', 'model4', 'model5')
 
 knitr::kable(model_comparison_cnn, caption = 'CNN model comparison', digits = 2) %>% 
   kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
@@ -607,9 +608,9 @@ plot(janosRDS_CNN) # plot best model
 
 model_janos_cnn_eval_test <- as.data.frame(evaluate(cnn_model_janos, data_test_x, data_test_y))
 
-final_model_comparison_cnn <- rbind(as.data.frame(evaluate(cnn_model_janos, data_train_x, data_train_y)) ,model_janos_cnn_eval, model_janos_cnn_eval_test)
+final_model_comparison_cnn <- cbind(as.data.frame(evaluate(cnn_model_janos, data_train_x, data_train_y)) ,model_janos_cnn_eval, model_janos_cnn_eval_test)
 
-rownames(final_model_comparison_cnn) <- c('training set', 'validation set', 'test set')
+names(final_model_comparison_cnn) <- c('training set', 'validation set', 'test set')
 
 knitr::kable(final_model_comparison_cnn, caption = 'Final CNN model (baseline - Janos) comparison across data partitions', digits = 2) %>% 
   kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
@@ -995,18 +996,18 @@ train_generator <- flow_images_from_directory(
   batch_size = batch_size,
   class_mode = "binary"       # binary_crossentropy loss for binary labels
 )
-# set.seed(1234)
-# hot_dog_model_final_inceptionV3_RDS <- hot_dog_model_final_inceptionV3 %>% fit(
-#   train_generator,
-#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
-#   epochs = 10,
-#   validation_data = validation_generator,
-#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
-#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
-# )
-# 
-# # Save the model
-# save_model_hdf5(hot_dog_model_final_inceptionV3, "data/hot_dog_model_final_inceptionV3.h5")
+set.seed(1234)
+hot_dog_model_final_inceptionV3_RDS <- hot_dog_model_final_inceptionV3 %>% fit(
+  train_generator,
+  steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+  epochs = 10,
+  validation_data = validation_generator,
+  validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+  callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+)
+
+# Save the model
+save_model_hdf5(hot_dog_model_final_inceptionV3, "data/hot_dog_model_final_inceptionV3.h5")
 
 # Recreate the exact same model purely from the file
 hot_dog_model_final_inceptionV3 <- load_model_hdf5("data/hot_dog_model_final_inceptionV3.h5")

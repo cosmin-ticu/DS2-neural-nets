@@ -14,14 +14,20 @@ knitr::opts_chunk$set(
 rm(list = ls())
 set.seed(1234)
 library(keras)
-library(here)
+library(kableExtra)
+library(grid)
+library(magick)
+library(filesstrings)
 ```
 
 # 1. Fashion MNIST data
 
 ## a. Show some example images from the data.
 
+Taking a look at the first 6 images in the MNIST fashion dataset.
+
 ```{r}
+
 # Task 1 ------------------------------------------------------------------
 
 # import data
@@ -45,7 +51,9 @@ for (i in 1:6){
 }
 ```
 
-## b.Train a fully connected deep network to predict items.
+## b. Train a fully connected deep network to predict items.
+
+Normalizing the data after creating a validation set as well. The provided data only came with training and test sets.
 
 ```{r}
 # b, Train a fully connected deep network to predict items.
@@ -63,7 +71,7 @@ data_valid_x <- x_train[-train_indices,, ]
 data_train_y <- y_train[train_indices]
 data_valid_y <- y_train[-train_indices]
 
-# rescale x
+# rescale x - data normalization
 data_train_x <- as.matrix(as.data.frame.array(data_train_x)) / 255
 data_valid_x <- as.matrix(as.data.frame.array(data_valid_x)) / 255
 data_test_x <- as.matrix(as.data.frame.array(x_test)) / 255
@@ -72,7 +80,13 @@ data_test_x <- as.matrix(as.data.frame.array(x_test)) / 255
 data_train_y <- to_categorical(data_train_y, 10)
 data_valid_y <- to_categorical(data_valid_y, 10)
 data_test_y <- to_categorical(y_test, 10)
+```
 
+The following model building process contains the codes used in creating the models as snippets and summary tables for each model which show the total number of parameters and the specifications of each hidden layer. Plots of the training history of the models are also made after each.
+
+Building the baseline model following Janos' example from class.
+
+```{r}
 ### BASELINE MODEL
 # create model object - baseline Janos
 model_janos <- keras_model_sequential()
@@ -85,9 +99,7 @@ model_janos %>%
 
 # check model summary
 summary(model_janos)
-```
 
-```{r}
 # set loss function and the metrics we want to see
 compile(
   model_janos,
@@ -97,19 +109,31 @@ compile(
 )
 
 # fit model
-set.seed(1234)
-janosRDS_NN <- fit(
-  model_janos, data_train_x, data_train_y,
-  epochs = 30, batch_size = 128,
-  validation_data = list(data_valid_x, data_valid_y)
-)
+# set.seed(1234)
+# janosRDS_NN <- fit(
+#   model_janos, data_train_x, data_train_y,
+#   epochs = 30, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
 
-saveRDS(janosRDS_NN, file = paste0(here(),"/data/janosRDS_NN.rds"))
-janosRDS_NN <- readRDS(file = paste0(here(),"/data/janosRDS_NN.rds"))
+# saveRDS(janosRDS_NN, file = "data/janosRDS_NN.rds")
+janosRDS_NN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/janosRDS_NN.rds")
+
+# Save the model
+# save_model_hdf5(model_janos, "data/model_janos.h5")
+
+# Recreate the exact same model purely from the file
+model_janos <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model_janos.h5")
 
 # evaluate model
 model_janos_eval <- as.data.frame(evaluate(model_janos, data_valid_x, data_valid_y))
 
+plot(janosRDS_NN)
+```
+
+Building a much simpler model than the benchmark, without a dropout layer.
+
+```{r}
 ### FIRST MODEL
 # create model object
 model1 <- keras_model_sequential()
@@ -120,7 +144,7 @@ model1 %>%
   layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
 
 # check model summary
-# summary(model1)
+summary(model1)
 
 # set loss function and the metrics we want to see
 compile(
@@ -131,19 +155,31 @@ compile(
 )
 
 # fit model
-set.seed(1234)
-model1RDS_NN <- fit(
-  model1, data_train_x, data_train_y,
-  epochs = 30, batch_size = 128,
-  validation_data = list(data_valid_x, data_valid_y)
-)
+# set.seed(1234)
+# model1RDS_NN <- fit(
+#   model1, data_train_x, data_train_y,
+#   epochs = 30, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
 
-saveRDS(model1RDS_NN, file = "/data/model1RDS_NN.rds")
-model1RDS_NN <- readRDS(file = "/data/model1RDS_NN.rds")
+# saveRDS(model1RDS_NN, file = "data/model1RDS_NN.rds")
+model1RDS_NN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model1RDS_NN.rds")
+
+# Save the model
+# save_model_hdf5(model1, "data/model1.h5")
+
+# Recreate the exact same model purely from the file
+model1 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model1.h5")
 
 # evaluate model
 model1_eval <- as.data.frame(evaluate(model1, data_valid_x, data_valid_y))
 
+plot(model1RDS_NN)
+```
+
+Building the second model with another fully connected hidden layer between the relu and the output layers of the first model.
+
+```{r}
 ### SECOND MODEL
 # create model object
 model2 <- keras_model_sequential()
@@ -155,7 +191,7 @@ model2 %>%
   layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
 
 # check model summary
-# summary(model2)
+summary(model2)
 
 # set loss function and the metrics we want to see
 compile(
@@ -166,20 +202,31 @@ compile(
 )
 
 # fit model
-set.seed(1234)
-model2RDS_NN <- fit(
-  model2, data_train_x, data_train_y,
-  epochs = 30, batch_size = 128,
-  validation_data = list(data_valid_x, data_valid_y)
-)
+# set.seed(1234)
+# model2RDS_NN <- fit(
+#   model2, data_train_x, data_train_y,
+#   epochs = 30, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
 
-saveRDS(model2RDS_NN, file = paste0(here(),"/data/model2RDS_NN.rds"))
-model2RDS_NN <- readRDS(file = paste0(here(),"/data/model2RDS_NN.rds"))
+# saveRDS(model2RDS_NN, file = "data/model2RDS_NN.rds")
+model2RDS_NN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model2RDS_NN.rds")
 
 # evaluate model
 model2_eval <- as.data.frame(evaluate(model2, data_valid_x, data_valid_y))
 
+# Save the model
+# save_model_hdf5(model2, "data/model2.h5")
 
+# Recreate the exact same model purely from the file
+model2 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model2.h5")
+
+plot(model2RDS_NN)
+```
+
+Increasing the model complexity by including a drop-out layer and yet another dense layer with a tangential function.
+
+```{r}
 ### THIRD MODEL - TOO COMPLEX --> OVERFIT
 # create model object
 model3 <- keras_model_sequential()
@@ -193,7 +240,7 @@ model3 %>%
   layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
 
 # check model summary
-# summary(model3)
+summary(model3)
 
 # set loss function and the metrics we want to see
 compile(
@@ -204,19 +251,31 @@ compile(
 )
 
 # fit model
-set.seed(1234)
-model3RDS_NN <- fit(
-  model3, data_train_x, data_train_y,
-  epochs = 30, batch_size = 128,
-  validation_data = list(data_valid_x, data_valid_y)
-)
+# set.seed(1234)
+# model3RDS_NN <- fit(
+#   model3, data_train_x, data_train_y,
+#   epochs = 30, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
 
-saveRDS(model3RDS_NN, file = paste0(here(),"/data/model3RDS_NN.rds"))
-model3RDS_NN <- readRDS(file = paste0(here(),"/data/model3RDS_NN.rds"))
+# saveRDS(model3RDS_NN, file = "data/model3RDS_NN.rds")
+model3RDS_NN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model3RDS_NN.rds")
+
+# Save the model
+# save_model_hdf5(model3, "data/model3.h5")
+
+# Recreate the exact same model purely from the file
+model3 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model3.h5")
 
 # evaluate model
 model3_eval <- as.data.frame(evaluate(model3, data_valid_x, data_valid_y))
 
+plot(model3RDS_NN)
+```
+
+The fourth model forfeits one of the dense layers and drastically increases the weight of the drop-out layer in order to ensure the model does not appear overfitted, like its previous counterpart.
+
+```{r}
 ### FOURTH MODEL
 # create model object
 model4 <- keras_model_sequential()
@@ -225,11 +284,11 @@ model4 <- keras_model_sequential()
 model4 %>%
   layer_dense(units = 100, activation = 'sigmoid', input_shape = c(784)) %>%
   layer_dense(units = 100, activation = 'tanh') %>% # tangential function
-  layer_dropout(rate = 0.7) %>% # we leave 70% of the node weights unchanged
+  layer_dropout(rate = 0.7) %>% # increase dropout rate to 70%
   layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
 
 # check model summary
-# summary(model4)
+summary(model4)
 
 # set loss function and the metrics we want to see
 compile(
@@ -240,33 +299,44 @@ compile(
 )
 
 # fit model
-set.seed(1234)
-model4RDS_NN <- fit(
-  model4, data_train_x, data_train_y,
-  epochs = 30, batch_size = 128,
-  validation_data = list(data_valid_x, data_valid_y)
-)
+# set.seed(1234)
+# model4RDS_NN <- fit(
+#   model4, data_train_x, data_train_y,
+#   epochs = 30, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
+# 
+# saveRDS(model4RDS_NN, file = "data/model4RDS_NN.rds")
+model4RDS_NN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model4RDS_NN.rds")
 
-saveRDS(model4RDS_NN, file = paste0(here(),"/data/model4RDS_NN.rds"))
-model4RDS_NN <- readRDS(file = paste0(here(),"/data/model4RDS_NN.rds"))
+# Save the model
+# save_model_hdf5(model4, "data/model4.h5")
+
+# Recreate the exact same model purely from the file
+model4 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model4.h5")
 
 # evaluate model
 model4_eval <- as.data.frame(evaluate(model4, data_valid_x, data_valid_y))
 
+plot(model4RDS_NN)
+```
+
+The fifth model employs a softplus initial input layer, moving away from the linearity associated with the relu activation function. Normally the softplus activitation function is made so that negative values do not all achieve a zero value (like in the relu activation function). The drop-out rate of the respective layer was also made very small.
+
+```{r}
 ### FIFTH MODEL --> signs of overfitting
 # create model object
 model5 <- keras_model_sequential()
 
 # add layers to the model
 model5 %>%
-  layer_dense(units = 100, activation = 'softplus', input_shape = c(784)) %>% 
-  # not really necessary because inputs are not negative
+  layer_dense(units = 100, activation = 'softplus', input_shape = c(784)) %>% # not really necessary because inputs are not negative
   layer_dense(units = 100, activation = 'relu') %>% # standard bent linear model
-  layer_dropout(rate = 0.01) %>% # we leave 70% of the node weights unchanged
+  layer_dropout(rate = 0.01) %>% # change to 1% drop-out rate
   layer_dense(units = 10, activation = 'softmax') # 10 nodes because of the 10 digits
 
 # check model summary
-# summary(model5)
+summary(model5)
 
 # set loss function and the metrics we want to see
 compile(
@@ -277,45 +347,954 @@ compile(
 )
 
 # fit model
-set.seed(1234)
-model5RDS_NN <- fit(
-  model5, data_train_x, data_train_y,
-  epochs = 30, batch_size = 128,
-  validation_data = list(data_valid_x, data_valid_y)
-)
+# set.seed(1234)
+# model5RDS_NN <- fit(
+#   model5, data_train_x, data_train_y,
+#   epochs = 30, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
+# 
+# saveRDS(model5RDS_NN, file = "data/model5RDS_NN.rds")
+model5RDS_NN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model5RDS_NN.rds")
 
-saveRDS(model5RDS_NN, file = paste0(here(),"/data/model5RDS_NN.rds"))
-model5RDS_NN <- readRDS(file = paste0(here(),"/data/model5RDS_NN.rds"))
+# Save the model
+# save_model_hdf5(model5, "data/model5.h5")
+
+# Recreate the exact same model purely from the file
+model5 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model5.h5")
 
 # evaluate model
 model5_eval <- as.data.frame(evaluate(model5, data_valid_x, data_valid_y))
 
+plot(model5RDS_NN)
+
+# build model comparison table for all 3 dataset partitions
+model5_eval_test <- as.data.frame(evaluate(model5, data_test_x, data_test_y))
+
+final_model_comparison <- cbind(as.data.frame(evaluate(model5, data_train_x, data_train_y)) ,model5_eval, model5_eval_test)
+```
+
+Making a model comparison table of the crossentropy loss function values and the accuracy, we get the following results.
+
+```{r}
 # model comparison
 model_comparison <- cbind(model_janos_eval, model1_eval, model2_eval, model3_eval, model4_eval, model5_eval)
 
 colnames(model_comparison) <- c('baseline', 'model1', 'model2', 'model3', 'model4', 'model5')
-```
 
-```{r}
 knitr::kable(model_comparison, caption = 'NN model comparison', digits = 2) %>% 
   kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
 
-plot(model5RDS_NN, main = 'Best NN Model Performance')
 ```
 
+The best model evaluated on the validation set is the fifth model containing both bent linear and non-linear activation functions as well as a drop-out layer with a small weight.
 
 ## c. Evaluate the model on the test set. How does test error compare to validation error?
 
+Looking at model 5's performance on all 3 of the datasets (training, validation and test), we can expect that test performance will be lower as it has fewer observations than validation. Accuracy goes down a little, however loss is more noticeable due to smaller test dataset.
+
+```{r}
+# c, Evaluate the model on the test set. How does test error compare to validation error?
+
+names(final_model_comparison) <- c('training set', 'validation set', 'test set')
+
+knitr::kable(final_model_comparison, caption = 'Final model comparison across data partitions', digits = 2) %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+# test set performance is expected to be lower as it has fewer observations
+# accuracy goes down a little, however loss is more noticeable due to smaller dataset
+```
+
 ## d. Try building a convolutional neural network and see if you can improve test set performance.
+
+The following model building process contains the codes used in creating the models as snippets and summary tables for each model which show the total number of parameters and the specifications of each hidden layer. Plots of the training history of the models are also made after each.
+
+In order to build a convolutional neural network model, the datasets need to be switched to a 3D shape in order to undergo max pooling and 2D convolutional layer processing. Once those layers have filtered through the data, it is flattened into a 1D shape again in order to be used for the dense network part of all the neural net models used here.
+
+```{r}
+# d, Try building a convolutional neural network and see if you can improve test set performance.
+
+data_train_x <- array_reshape(data_train_x, c(nrow(data_train_x), 28, 28, 1))
+data_valid_x <- array_reshape(data_valid_x, c(nrow(data_valid_x), 28, 28, 1))
+data_test_x <- array_reshape(data_test_x, c(nrow(data_test_x), 28, 28, 1))
+```
+
+A benchmark model is created according to Janos' class example.
+
+```{r}
+### JANOS BASELINE MODEL - CNN
+
+cnn_model_janos <- keras_model_sequential()
+cnn_model_janos %>%
+  layer_conv_2d(
+    filters = 32, # number of nodes in this layer (could be anything?!)
+    kernel_size = c(3, 3), # search across the input space in 3x3 squares rather than 1x1 squares (which are just individual pixels)
+    activation = 'relu',
+    input_shape = c(28, 28, 1)
+  ) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% # converts space by taking max value from each 2x2 squares
+  layer_dropout(rate = 0.25) %>%
+  layer_flatten() %>% # increases complexity but turns back to 1D
+  layer_dense(units = 16, activation = 'relu') %>% # arbitrary
+  layer_dense(units = 10, activation = 'softmax') # arbitrary
+
+summary(cnn_model_janos)
+
+# Number of parameters:
+# - `layer_conv_2d` turns 28 x 28 to 26 x 26, using 9 parameters for each filter (3 x 3 weights), 
+# plus a bias for each filter, altogether 320 parameters
+# - `max_pooling2d` takes each disjoint 2 x 2 squares and collapses them to 1, turning a 26 x 26
+# "image" to a 13 x 13. No parameters are associated with this step.
+# - `flatten`: turns each "pixel" in each node to one separate node: 13 x 13 x 32 = 5408
+# - `dense`: fully connected layer: 5408 nodes x 16 new nodes + 16 biases = 86544
+# - final fully connected layer: 16 x 10 + 10 = 170
+
+compile(
+  cnn_model_janos,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# set.seed(1234)
+# janosRDS_CNN <- fit(
+#   cnn_model_janos, data_train_x, data_train_y,
+#   epochs = 15, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
+
+# saveRDS(janosRDS_CNN, file = "data/janosRDS_CNN.rds")
+janosRDS_CNN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/janosRDS_CNN.rds")
+
+# Save the model
+# save_model_hdf5(cnn_model_janos, "data/cnn_model_janos.h5")
+
+# Recreate the exact same model purely from the file
+cnn_model_janos <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/cnn_model_janos.h5")
+
+# evaluate model
+model_janos_cnn_eval <- as.data.frame(evaluate(cnn_model_janos, data_valid_x, data_valid_y))
+
+plot(janosRDS_CNN)
+```
+
+The first model is a less complex version of Janos' model by increasing the kernel size to 5x5 squares and the pooling size to 3x3 squares. Coupled with 10 filter nodes in the convolutional layer, this model is expected to perform worse than the benchmark.
+
+```{r}
+### CNN Model 1 --> less complex version of Janos' model
+# lower performance, but train & valid performance is streamlined
+
+cnn_model1 <- keras_model_sequential()
+cnn_model1 %>%
+  layer_conv_2d(
+    filters = 10, # number of nodes in this layer (could be anything?!)
+    kernel_size = c(5, 5), # search across the input space in 5x5 squares rather than 1x1 squares (which are just individual pixels)
+    activation = 'relu',
+    input_shape = c(28, 28, 1)
+  ) %>%
+  layer_max_pooling_2d(pool_size = c(3, 3)) %>% # converts space by taking max value from each 3x3 squares 
+  layer_dropout(rate = 0.25) %>%
+  # Dense layers take vectors as input (which are 1D), while the current output is a 3D tensor. 
+  # First, you will flatten (or unroll) the 3D output to 1D, then add one or more Dense layers on top. 
+  # MINIST has 10 output classes, so you use a final Dense layer with 10 outputs and a softmax activation.
+  layer_flatten() %>% # increases complexity
+  layer_dense(units = 10, activation = 'relu') %>% # arbitrary
+  layer_dense(units = 10, activation = 'softmax') # arbitrary
+
+summary(cnn_model1)
+
+compile(
+  cnn_model1,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# set.seed(1234)
+# model1RDS_CNN <- fit(
+#   cnn_model1, data_train_x, data_train_y,
+#   epochs = 15, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
+
+# saveRDS(model1RDS_CNN, file = "data/model1RDS_CNN.rds")
+model1RDS_CNN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model1RDS_CNN.rds")
+
+# Save the model
+# save_model_hdf5(cnn_model1, "data/cnn_model1.h5")
+
+# Recreate the exact same model purely from the file
+cnn_model1 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/cnn_model1.h5")
+
+# evaluate model
+model1_cnn_eval <- as.data.frame(evaluate(cnn_model1, data_valid_x, data_valid_y))
+
+plot(model1RDS_CNN)
+```
+
+The second model follows a stackoverflow example by combining the convolutional and pooling layers twice before converting back to a 1D space. This model builds upon the 5x5 kernel size and the 3x3 pooling size from the first model. It is expected to perform a slight bit better. The expectation here would be that the best performance would be achieved by first having a complex convolutional layer followed by a pooling layer (such as the case from the benchmark model) and then having the same order of layers but with much simpler parameters, such as the 5x5 kernel and the 3x3 pooling.
+
+```{r}
+### CNN Model 2 --> following a stackoverflow example
+
+cnn_model2 <- keras_model_sequential()
+cnn_model2 %>%
+  layer_conv_2d(
+    filters = 10, # number of nodes in this layer (could be anything?!)
+    kernel_size = c(5, 5), # search across the input space in 5x5 squares rather than 1x1 squares (which are just individual pixels)
+    activation = 'relu',
+    input_shape = c(28, 28, 1)
+  ) %>%
+  layer_max_pooling_2d(pool_size = c(3, 3)) %>% # converts space by taking max value from each 3x3 squares
+  layer_conv_2d(
+    filters = 20, # number of nodes in this layer (could be anything?!)
+    kernel_size = c(5, 5), # search across the input space in 5x5 squares rather than 1x1 squares (which are just individual pixels)
+    activation = 'relu',
+    input_shape = c(28, 28, 1)
+  ) %>%
+  layer_max_pooling_2d(pool_size = c(3, 3)) %>% # converts space by taking max value from each 3x3 squares
+  layer_dropout(rate = 0.25) %>%
+  layer_flatten() %>% # increases complexity
+  layer_dense(units = 10, activation = 'relu') %>% # arbitrary
+  layer_dense(units = 10, activation = 'softmax') # arbitrary
+
+summary(cnn_model2)
+
+compile(
+  cnn_model2,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# set.seed(1234)
+# model2RDS_CNN <- fit(
+#   cnn_model2, data_train_x, data_train_y,
+#   epochs = 15, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
+
+# saveRDS(model2RDS_CNN, file = "data/model2RDS_CNN.rds")
+model2RDS_CNN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model2RDS_CNN.rds")
+
+# Save the model
+# save_model_hdf5(cnn_model2, "data/cnn_model2.h5")
+
+# Recreate the exact same model purely from the file
+cnn_model2 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/cnn_model2.h5")
+
+# evaluate model
+model2_cnn_eval <- as.data.frame(evaluate(cnn_model2, data_valid_x, data_valid_y))
+
+plot(model2RDS_CNN)
+```
+
+Model 3 increase the complexity by adding more filter nodes in the convolutional layers and by decreasing both the kernel and pooling sizes. It is expected to perform better than the 1st and 2nd CNN models.
+
+```{r}
+### CNN Model 3 --> following a stackoverflow example
+
+cnn_model3 <- keras_model_sequential()
+cnn_model3 %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = "relu", 
+                input_shape = c(28,28,1)) %>% 
+  layer_max_pooling_2d(pool_size = c(2,2)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = "relu") %>% 
+  layer_max_pooling_2d(pool_size = c(2,2)) %>% 
+  layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = "relu") %>% 
+  layer_dropout(rate = 0.25) %>%
+  layer_flatten() %>% # increases complexity
+  layer_dense(units = 10, activation = 'relu') %>% # arbitrary
+  layer_dense(units = 10, activation = 'softmax') # arbitrary
+
+summary(cnn_model3)
+
+compile(
+  cnn_model3,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# set.seed(1234)
+# model3RDS_CNN <- fit(
+#   cnn_model3, data_train_x, data_train_y,
+#   epochs = 15, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
+
+# saveRDS(model3RDS_CNN, file = "data/model3RDS_CNN.rds")
+model3RDS_CNN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model3RDS_CNN.rds")
+
+# Save the model
+# save_model_hdf5(cnn_model3, "data/cnn_model3.h5")
+
+# Recreate the exact same model purely from the file
+cnn_model3 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/cnn_model3.h5")
+
+# evaluate model
+model3_cnn_eval <- as.data.frame(evaluate(cnn_model3, data_valid_x, data_valid_y))
+
+plot(model3RDS_CNN)
+```
+
+Model 4 only keeps 1 convolutional layer, 1 pooling layer and removes all of the dense layers after the flattening, thus only keeping the necessary output node. The activation function of the convolutional layer is also changed.
+
+```{r}
+### CNN Model 4
+
+cnn_model4 <- keras_model_sequential()
+cnn_model4 %>% 
+  layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = "sigmoid", 
+                input_shape = c(28,28,1)) %>% 
+  layer_max_pooling_2d(pool_size = c(2,2)) %>% 
+  layer_dropout(rate = 0.25) %>%
+  layer_flatten() %>% # increases complexity
+  layer_dense(units = 10, activation = 'softmax') # arbitrary
+
+summary(cnn_model4)
+
+compile(
+  cnn_model4,
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# set.seed(1234)
+# model4RDS_CNN <- fit(
+#   cnn_model4, data_train_x, data_train_y,
+#   epochs = 15, batch_size = 128,
+#   validation_data = list(data_valid_x, data_valid_y)
+# )
+
+# saveRDS(model4RDS_CNN, file = "data/model4RDS_CNN.rds")
+model4RDS_CNN <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/model4RDS_CNN.rds")
+
+# Save the model
+# save_model_hdf5(cnn_model4, "data/cnn_model4.h5")
+
+# Recreate the exact same model purely from the file
+cnn_model4 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/cnn_model4.h5")
+
+# evaluate model
+model4_cnn_eval <- as.data.frame(evaluate(cnn_model4, data_valid_x, data_valid_y))
+
+plot(model4RDS_CNN)
+```
+
+Making a model comparison table of the crossentropy loss function values and the accuracy, we get the following results.
+
+```{r}
+# model comparison
+model_comparison_cnn <- cbind(model_janos_cnn_eval, model1_cnn_eval, model2_cnn_eval, model3_cnn_eval, model4_cnn_eval)
+
+names(model_comparison_cnn) <- c('baseline', 'model1', 'model2', 'model3', 'model4')
+
+knitr::kable(model_comparison_cnn, caption = 'CNN model comparison', digits = 2) %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+```
+
+The best model evaluated on the validation set is the benchmark model containing a convolutational layer with a small kernel, a pooling layer with a small size and a bent linear dense hidden layer as well as a drop-out layer with a 25% rate.
+
+Now that we have chosen the best CNN model, we can evaluate it on the test set. The following table compares the model's performance on the training, validation and test sets.
+
+```{r}
+# Evaluate the model on the test set. How does test error compare to validation error?
+
+model_janos_cnn_eval_test <- as.data.frame(evaluate(cnn_model_janos, data_test_x, data_test_y))
+
+final_model_comparison_cnn <- cbind(as.data.frame(evaluate(cnn_model_janos, data_train_x, data_train_y)) ,model_janos_cnn_eval, model_janos_cnn_eval_test)
+
+names(final_model_comparison_cnn) <- c('training set', 'validation set', 'test set')
+
+knitr::kable(final_model_comparison_cnn, caption = 'Final CNN model (baseline - Janos) comparison across data partitions', digits = 2) %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+# test set performance is expected to be lower as it has fewer observations --> not the case
+# definitely much better than neural network; convolutional layer makes difference
+```
+
+The performance increase against the deep neural network counterparts is definitely noticeable. As such, for classification of fashion image from the MNIST dataset, we deem the benchmark model (built by Janos) to be the best performing neural network approach.
 
 # 2. Hot dog or not hot dog?
 
 ## a. Pre-process data so that it is acceptable by Keras (set folder structure, bring images to the same size, etc).
 
+The folder structure with all of the images was downloaded to this [GitHub repository folder](https://github.com/cosmin-ticu/DS2-neural-nets/tree/main/data/hot-dog-not-hot-dog). The following code chunks that are commented out were used to create the validation set, as the data only provided training and test folder structures. The image sizes were also brought to the same size through the image generator function.
+
+```{r}
+# a, Pre-process data so that it is acceptable by Keras (set folder structure, bring images to the same size, etc).
+# set parameters for data partitions
+# set augmentation parameters just for the training set
+train_datagen <- image_data_generator(rescale = 1/255)  
+validation_datagen <- image_data_generator(rescale = 1/255)  
+test_datagen <- image_data_generator(rescale = 1/255) 
+
+image_size <- c(150, 150)
+batch_size <- 50
+
+# validation_indeces_yes <- sample(list.files(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train/hot_dog")), size = 150, replace = F)
+# validation_indeces_no <- sample(list.files(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train/not_hot_dog")), size = 150, replace = F)
+
+# dir.create(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets","/data/hot-dog-not-hot-dog/validation"))
+# dir.create(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets","/data/hot-dog-not-hot-dog/validation/hot_dog"))
+# dir.create(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets","/data/hot-dog-not-hot-dog/validation/not_hot_dog"))
+# 
+# # move yes cases
+# for (file in list.files(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train/hot_dog"))) {
+#   if (file %in% validation_indeces_yes){
+#     file.move(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train/hot_dog/", file), paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets","/data/hot-dog-not-hot-dog/validation/hot_dog/"))
+#   }
+# }
+# 
+# # move no cases
+# for (file in list.files(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train/not_hot_dog"))) {
+#   if (file %in% validation_indeces_no){
+#     file.move(paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train/not_hot_dog/", file), paste0("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets","/data/hot-dog-not-hot-dog/validation/not_hot_dog/"))
+#   }
+# }
+
+train_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train"), # Target directory  
+  train_datagen,              # Data generator
+  target_size = image_size,  # Resizes all images to 150 × 150
+  batch_size = batch_size,
+  class_mode = "binary"       # binary_crossentropy loss for binary labels
+)
+
+validation_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/validation"),   
+  validation_datagen,
+  target_size = image_size,
+  batch_size = batch_size,
+  class_mode = "binary"
+)
+
+test_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/test"), # Target directory  
+  test_datagen,
+  target_size = image_size,
+  batch_size = batch_size,
+  class_mode = "binary"
+)
+```
+
 ## b. Estimate a convolutional neural network to predict if an image contains a hot dog or not. Evaluate your model on the test set.
+
+A baseline CNN classification model was built. The following code shows the building process, summary statistics and the training history plot.
+
+```{r}
+# b, Estimate a convolutional neural network to predict if an image contains a hot dog or not. Evaluate your model on the test set.
+
+### BASELINE MODEL --> Overfitted
+# 3rd dimension refers to the color dimension
+hot_dog_model_baseline <- keras_model_sequential()%>%
+  layer_conv_2d(filters = 32,
+                kernel_size = c(3, 3), 
+                activation = 'relu',
+                input_shape = c(150, 150, 3)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 64,
+                kernel_size = c(3, 3),
+                activation = 'relu') %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_dropout(rate = 0.5) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 64, activation = 'relu') %>% 
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 1, activation = "sigmoid")   # for binary
+
+summary(hot_dog_model_baseline)
+
+hot_dog_model_baseline %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = 'rmsprop',
+  metrics = c("accuracy")
+)
+
+# set.seed(1234)
+# hot_dog_baseline_RDS <- hot_dog_model_baseline %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 20,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size # divide size of training dataset by batch size
+# )
+# 
+# saveRDS(hot_dog_baseline_RDS, file = "data/hot_dog_baseline_RDS.rds")
+hot_dog_baseline_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_baseline_RDS.rds")
+
+# Save the model
+# save_model_hdf5(hot_dog_model_baseline, "data/hot_dog_model_baseline.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_baseline <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_baseline.h5")
+
+# evaluate model
+hot_dog_model_baseline_eval <- as.data.frame(evaluate(hot_dog_model_baseline, test_generator))
+# LIKELY TO BE THE WORST MODEL IN THE HISTORY OF THIS CLASS
+
+plot(hot_dog_baseline_RDS) # --> terrible
+
+knitr::kable(hot_dog_model_baseline_eval, caption = 'Test set performance of baseline CNN image classifier') %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+```
+
+Due to the bad performance of the first CNN classifier, a more complex model was built in order to increase accuracy. If accuracy does not increase, at least the overfitting trends of the baseline model are expected to be overcome. We inspect the building process, summary statistics and plots below.
+
+```{r}
+### FINAL MODEL
+hot_dog_model_final <- keras_model_sequential()%>%
+  layer_conv_2d(filters = 32,
+                kernel_size = c(3, 3), 
+                activation = 'relu',
+                input_shape = c(150, 150, 3)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 32,
+                kernel_size = c(3, 3), 
+                activation = 'relu') %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 64,
+                kernel_size = c(3, 3), 
+                activation = 'relu') %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_conv_2d(filters = 16,
+                kernel_size = c(3, 3), 
+                activation = 'relu') %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>% 
+  layer_dropout(rate = 0.5) %>% 
+  layer_flatten() %>% 
+  layer_dense(units = 64, activation = 'relu') %>% 
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 1, activation = "sigmoid")   # for binary
+
+summary(hot_dog_model_final)
+
+hot_dog_model_final %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = 'rmsprop',
+  metrics = c("accuracy")
+)
+
+# set.seed(1234)
+# hot_dog_final_RDS <- hot_dog_model_final %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 20,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+# )
+# 
+# saveRDS(hot_dog_final_RDS, file = "data/hot_dog_final_RDS.rds")
+hot_dog_final_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_final_RDS.rds")
+
+# Save the model
+# save_model_hdf5(hot_dog_model_final, "data/hot_dog_model_final.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_final <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_final.h5")
+
+# evaluate model
+hot_dog_final_model_eval <- as.data.frame(evaluate(hot_dog_model_final, test_generator))
+# better than a coin-flip yo
+
+plot(hot_dog_final_RDS) # better
+
+knitr::kable(hot_dog_final_model_eval, caption = 'Test set performance of chosen CNN image classifier') %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+
+# initialize empty model eval list
+model_eval_list <- list()
+model_eval_list['final_model_no_augmentation'] <- as.data.frame(evaluate(hot_dog_model_final, validation_generator))
+```
+
+Overall, the performance of both CNN models is very poor (however, the second model's training history does not show signs of overfitting i.e. performance is bad throughout). This begs the question of using data augmentation, as the example images are fairly difficult to classify. Most of the images contain the hot dogs only in a narrow part of the picture, usually in the center and all the pictures seem to lack brightness. This begs the inquiry into data augmentation performance.
 
 ## c. Could data augmentation techniques help with achieving higher predictive accuracy? Try some augmentations that you think make sense and compare
 
+A few augmentation techniques were used. The notable ones are presented here in the model building process. In order to add data augmentation, the image generator parameters were tweaked, oftentimes translating into more zoomed in pictures, rotated pics and brighter images. The first data augmentation attempt can be seen below.
+
+```{r}
+# c, Could data augmentation techniques help with achieving higher predictive accuracy? 
+
+### FIRST DATA AUGMENTATION
+# reinitialize training generator for data augmentation
+train_datagen = image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2, # crops corners of most photos --> useful!
+  horizontal_flip = TRUE,
+  fill_mode = "nearest"
+)
+train_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train"), # Target directory  
+  train_datagen,              # Data generator
+  target_size = image_size,  # Resizes all images to 150 × 150
+  batch_size = batch_size,
+  class_mode = "binary"       # binary_crossentropy loss for binary labels
+)
+# set.seed(1234)
+# hot_dog_final_aug1_RDS <- hot_dog_model_final %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 20,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+# )
+# 
+# # Save the model
+# save_model_hdf5(hot_dog_model_final, "data/hot_dog_model_aug1.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_final <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_aug1.h5")
+
+# saveRDS(hot_dog_final_aug1_RDS, file = "data/hot_dog_final_aug1_RDS.rds")
+hot_dog_final_aug1_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_final_aug1_RDS.rds")
+
+model_eval_list['first_try_augmentation'] <- as.data.frame(evaluate(hot_dog_model_final, validation_generator))
+
+```
+
+The second data augmentation is more aggressive than the first one, with a higher zoom, rotation and brightness range. It is expected that this model will perform better.
+
+```{r}
+### SECOND DATA AUGMENTATION
+# reinitialize training generator for data augmentation
+train_datagen = image_data_generator(
+  rescale = 1/255,
+  rotation_range = 90,
+  width_shift_range = 0.4,
+  height_shift_range = 0.4,
+  zoom_range = 0.5, # crops corners of most photos --> useful!
+  brightness_range = c(1,1.5),
+  fill_mode = "nearest" # applies to new sections of image after rotations etc.
+)
+train_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train"), # Target directory  
+  train_datagen,              # Data generator
+  target_size = image_size,  # Resizes all images to 150 × 150
+  batch_size = batch_size,
+  class_mode = "binary"       # binary_crossentropy loss for binary labels
+)
+# set.seed(1234)
+# hot_dog_final_aug2_RDS <- hot_dog_model_final %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 20,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+# )
+# 
+# # Save the model
+# save_model_hdf5(hot_dog_model_final, "data/hot_dog_model_aug2.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_final <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_aug2.h5")
+
+# saveRDS(hot_dog_final_aug2_RDS, file = "data/hot_dog_final_aug2_RDS.rds")
+hot_dog_final_aug2_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_final_aug2_RDS.rds")
+
+model_eval_list['second_try_augmentation'] <- as.data.frame(evaluate(hot_dog_model_final, validation_generator))
+# accuracy is significantly higher --> proof that augmentation on training set works?!
+
+```
+
+Accuracy appears to significantly increase due to the image augmentation techniques.
+
+The third attempt at data augmentation uses a lower zoom range, lower rotation, but higher 1-dimensional shifts as well as a different fill mode. The fill mode applied to new sections of images after rotations, zooms, crops in order to fill the "missing pixels". The standard in data augmentation is the nearest approach. For the third model, the wrap mode is applied for comparison's sake to the first 2 models that use standard fill mode techniques.
+
+```{r}
+### THIRD DATA AUGMENTATION
+# reinitialize training generator for data augmentation
+train_datagen = image_data_generator(
+  rescale = 1/255,
+  rotation_range = 10,
+  width_shift_range = 0.5,
+  height_shift_range = 0.5,
+  zoom_range = 0.1, # crops corners of most photos --> useful!
+  brightness_range = c(1.5,2),
+  fill_mode = "wrap" # applies to new sections of image after rotations etc.
+)
+train_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train"), # Target directory  
+  train_datagen,              # Data generator
+  target_size = image_size,  # Resizes all images to 150 × 150
+  batch_size = batch_size,
+  class_mode = "binary"       # binary_crossentropy loss for binary labels
+)
+# set.seed(1234)
+# hot_dog_final_aug3_RDS <- hot_dog_model_final %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 20,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+# )
+
+# Save the model
+# save_model_hdf5(hot_dog_model_final, "data/hot_dog_model_aug3.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_final <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_aug3.h5")
+
+# saveRDS(hot_dog_final_aug3_RDS, file = "data/hot_dog_final_aug3_RDS.rds")
+hot_dog_final_aug3_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_final_aug3_RDS.rds")
+
+model_eval_list['third_try_augmentation'] <- as.data.frame(evaluate(hot_dog_model_final, validation_generator))
+# model performance seems to stay relatively constant between training and validation
+```
+
+Observing a comparison table between the final CNN model with no augmentation and its augmented counterparts on the validation set:
+
+```{r}
+model_eval_hot_dog <- as.data.frame(model_eval_list)
+row.names(model_eval_hot_dog) <- c('loss','accuracy')
+knitr::kable(model_eval_hot_dog, caption = "", digits = 3 ) %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+
+## Conclusion to this point - augmentation does help performance
+```
+
 ## d. Try to rely on some pre-built neural networks to aid prediction. Can you achieve a better performance using transfer learning for this problem?
 
+While data augmentation did help the predictive power of the models, neural networks are so popular these days that algorithms are open-sourced and through the keras package, we can have access to notable image classification NN/CNN algos.
 
+First, we will take the best training data augmentation parameters from the previous exercise. This refers to the parameters used by the second augmentation model.
+
+```{r}
+# reinitialize training generator for data augmentation with best augmentation parameters
+train_datagen = image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2, # crops corners of most photos --> useful!
+  horizontal_flip = TRUE,
+  fill_mode = "nearest"
+)
+train_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train"), # Target directory  
+  train_datagen,              # Data generator
+  target_size = image_size,  # Resizes all images to 150 × 150
+  batch_size = batch_size,
+  class_mode = "binary"       # binary_crossentropy loss for binary labels
+)
+```
+
+For the first transfer learning algorithm, the famous Google Neural Network model is chosen, called Inception V3. Its layers will be added to a model containing a pooling layer, a dense layer and a final output layer for the binary classification. The data fed into this algorithm will contain the augmented training set.
+
+```{r}
+# d, Try to rely on some pre-built neural networks to aid prediction. 
+# Can you achieve a better performance using transfer learning for this problem?
+
+##### FIRST TRY
+# we will improve the augmented final model
+# create the base pre-trained model
+conv_base <- application_inception_v3(
+  weights = "imagenet",
+  include_top = FALSE,
+  input_shape = c(image_size, 3)
+)
+
+summary(conv_base)
+# The convolutional base of inception has 21,768,352 parameters, which is very large
+
+# freeze all convolutional inception V3 layers
+freeze_weights(conv_base)
+
+### FINAL MODEL + Transfer Learning w/ Inception V3
+hot_dog_model_final_inceptionV3 <- keras_model_sequential()%>%
+  conv_base %>% 
+  layer_global_average_pooling_2d() %>% 
+  layer_dense(units = 16, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'sigmoid')
+
+hot_dog_model_final_inceptionV3 %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = 'rmsprop',
+  metrics = c("accuracy")
+)
+
+# reinitialize training generator for data augmentation with best augmentation parameters
+train_datagen = image_data_generator(
+  rescale = 1/255,
+  rotation_range = 40,
+  width_shift_range = 0.2,
+  height_shift_range = 0.2,
+  shear_range = 0.2,
+  zoom_range = 0.2, # crops corners of most photos --> useful!
+  horizontal_flip = TRUE,
+  fill_mode = "nearest"
+)
+train_generator <- flow_images_from_directory(
+  file.path("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets", "/data/hot-dog-not-hot-dog/train"), # Target directory  
+  train_datagen,              # Data generator
+  target_size = image_size,  # Resizes all images to 150 × 150
+  batch_size = batch_size,
+  class_mode = "binary"       # binary_crossentropy loss for binary labels
+)
+# set.seed(1234)
+# hot_dog_model_final_inceptionV3_RDS <- hot_dog_model_final_inceptionV3 %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 10,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+# )
+
+# Save the model
+# save_model_hdf5(hot_dog_model_final_inceptionV3, "data/hot_dog_model_final_inceptionV3.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_final_inceptionV3 <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_final_inceptionV3.h5")
+
+# saveRDS(hot_dog_model_final_inceptionV3_RDS, file = "data/hot_dog_model_final_inceptionV3_RDS.rds")
+hot_dog_model_final_inceptionV3_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_final_inceptionV3_RDS.rds")
+
+model_eval_list['final_conv_inceptionV3_augmented'] <- 
+  as.data.frame(evaluate(hot_dog_model_final_inceptionV3, validation_generator))
+
+```
+
+
+
+For the second transfer learning algorithm, the Mobilenet Network model is chosen. Its layers will be added to a model containing a pooling layer, a dense layer and a final output layer for the binary classification. The data fed into this algorithm will contain the augmented training set.
+
+```{r}
+##### SECOND TRY
+# we will improve the augmented final model
+# create the base pre-trained model
+base_model <- application_mobilenet(
+  weights = 'imagenet', 
+  include_top = FALSE,
+  input_shape = c(image_size, 3))
+
+summary(base_model)
+# The convolutional base of mobilenet has 3,228,864 parameters, which is also very large
+
+# freeze all convolutional mobilenet layers
+freeze_weights(base_model)
+
+### FINAL MODEL + Transfer Learning w/ Mobilenet
+hot_dog_model_final_mobilenet <- keras_model_sequential()%>%
+  base_model %>% 
+  layer_global_average_pooling_2d() %>% 
+  layer_dense(units = 16, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'sigmoid')
+
+hot_dog_model_final_mobilenet %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = 'rmsprop',
+  metrics = c("accuracy")
+)
+
+# set.seed(1234)
+# hot_dog_model_final_mobilenet_RDS <- hot_dog_model_final_mobilenet %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 10,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+# )
+
+# Save the model
+# save_model_hdf5(hot_dog_model_final_mobilenet, "data/hot_dog_model_final_mobilenet.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_final_mobilenet <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_final_mobilenet.h5")
+
+# saveRDS(hot_dog_model_final_mobilenet_RDS, file = "data/hot_dog_model_final_mobilenet_RDS.rds")
+hot_dog_model_final_mobilenet_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_final_mobilenet_RDS.rds")
+
+model_eval_list['final_conv_mobilenet_augmented'] <- 
+  as.data.frame(evaluate(hot_dog_model_final_mobilenet, validation_generator))
+
+```
+
+For the third transfer learning algorithm, the Resnet (Residual Net) Network model is chosen. Its layers will be added to a model containing a pooling layer, a dense layer and a final output layer for the binary classification. The data fed into this algorithm will contain the augmented training set.
+
+```{r}
+##### THIRD TRY
+# we will improve the augmented final model
+# create the base pre-trained model
+resnet50_model <- application_resnet50(
+  input_shape = c(image_size, 3), 
+  weights = 'imagenet', 
+  include_top = FALSE
+)
+
+summary(resnet50_model)
+# The convolutional base of resnet has 23,587,712 parameters, which is also very large
+
+# freeze all convolutional resnet layers
+freeze_weights(resnet50_model)
+
+### FINAL MODEL + Transfer Learning w/ Resnet
+hot_dog_model_final_resnet <- keras_model_sequential()%>%
+  resnet50_model %>% 
+  layer_global_average_pooling_2d() %>% 
+  layer_dense(units = 16, activation = 'relu') %>% 
+  layer_dense(units = 1, activation = 'sigmoid')
+
+hot_dog_model_final_resnet %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = 'rmsprop',
+  metrics = c("accuracy")
+)
+
+# set.seed(1234)
+# hot_dog_model_final_resnet_RDS <- hot_dog_model_final_resnet %>% fit(
+#   train_generator,
+#   steps_per_epoch = 198 / batch_size, # divide size of training dataset by batch size
+#   epochs = 10,
+#   validation_data = validation_generator,
+#   validation_steps = 300 / batch_size, # divide size of training dataset by batch size
+#   callback_reduce_lr_on_plateau(monitor = "val_loss", factor = 0.1) # if crossentropy loss plateaus, change LR
+# )
+
+# Save the model
+# save_model_hdf5(hot_dog_model_final_resnet, "data/hot_dog_model_final_resnet.h5")
+
+# Recreate the exact same model purely from the file
+hot_dog_model_final_resnet <- load_model_hdf5("F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_final_resnet.h5")
+
+# saveRDS(hot_dog_model_final_resnet_RDS, file = "data/hot_dog_model_final_resnet_RDS.rds")
+hot_dog_model_final_resnet_RDS <- readRDS(file = "F:/OneDrive - Central European University/Courses/Winter_Term/Data Science 2/assignment 2/DS2-neural-nets/data/hot_dog_model_final_resnet_RDS.rds")
+
+model_eval_list['final_conv_resnet_augmented'] <- 
+  as.data.frame(evaluate(hot_dog_model_final_resnet, validation_generator))
+
+```
+
+After running all of the transfer learning neural networks with data augmentation on the training and validation sets, it is worthwhile to evaluate their performances alongside the initial non-augmented model and its augmented counterparts.
+
+```{r}
+# take final look at your baby --> all variants of final model
+model_eval_hot_dog <- as.data.frame(model_eval_list)
+row.names(model_eval_hot_dog) <- c('loss','accuracy')
+knitr::kable(model_eval_hot_dog[1:4], caption = "Augmented & Non-Augmented Models - Part 1", digits = 3 ) %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+
+knitr::kable(model_eval_hot_dog[5:7], caption = "Augmented & Non-Augmented Models - Part 2", digits = 3 ) %>% 
+  kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
+```
+
+Plotting the Inception V3's model training:
+
+```{r}
+plot(hot_dog_model_final_inceptionV3_RDS)
+```
+
+
+We can clearly see the superiority of Google's neural network, which begs the question of whether a data scientist is always better off working alone or if the data science community can come to the rescue. Our results seem to point to the latter case.
+
+As a final remark, it is worthwhile to mention that the number of epochs were always kept low due to a low computational power on the data scientist's laptop. More stable performance would have achieved had there been more computational resources.

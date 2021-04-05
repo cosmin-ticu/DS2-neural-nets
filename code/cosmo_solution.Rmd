@@ -1,5 +1,5 @@
 ---
-title: "nuts"
+title: "Homework 2 - DS2 - Neural Nets"
 author: "Cosmin Catalin Ticu"
 date: "4/4/2021"
 output: html_document
@@ -19,6 +19,8 @@ library(grid)
 library(magick)
 library(filesstrings)
 ```
+
+### The original R-codes for this task can be found in the R script of this [GitHub repo](https://github.com/cosmin-ticu/DS2-neural-nets).
 
 # 1. Fashion MNIST data
 
@@ -51,6 +53,8 @@ for (i in 1:6){
 }
 ```
 
+The train dataset contains 60,000 grayscale images of fashion items while the test contains 10,000 grayscale images. The items belong to 10 classes which are indicated by numbers ranging from 0 to 9 and can be found in the y-variable vectors. The data without the label is stored in three dimensional arrays. Writing below each picture indicates the true class.
+
 ## b. Train a fully connected deep network to predict items.
 
 Normalizing the data after creating a validation set as well. The provided data only came with training and test sets.
@@ -82,7 +86,7 @@ data_valid_y <- to_categorical(data_valid_y, 10)
 data_test_y <- to_categorical(y_test, 10)
 ```
 
-The following model building process contains the codes used in creating the models as snippets and summary tables for each model which show the total number of parameters and the specifications of each hidden layer. Plots of the training history of the models are also made after each.
+The following model building process contains the codes used in creating the models as snippets and summary tables for each model which show the total number of parameters and the specifications of each hidden layer. Plots of the training history of the models are also made after each model. The input and output layers do not change as there are always 784 inputs (28 by 28 images) and 10 outputs as per the 10 classification classes.
 
 Building the baseline model following Janos' example from class.
 
@@ -694,7 +698,7 @@ knitr::kable(model_comparison_cnn, caption = 'CNN model comparison', digits = 2)
   kable_styling( position = "center", latex_options = 'hold_position', bootstrap_options = c("striped", "hover"))
 ```
 
-The best model evaluated on the validation set is the benchmark model containing a convolutational layer with a small kernel, a pooling layer with a small size and a bent linear dense hidden layer as well as a drop-out layer with a 25% rate.
+The best model evaluated on the validation set is the benchmark model containing a convolutational layer with a small kernel, a pooling layer with a small size and a bent linear dense hidden layer as well as a drop-out layer with a 25% rate. As an observed rule of thumb, larger kernel sizes decreased accuracy much in the likes of adding too many convolutional layers.
 
 Now that we have chosen the best CNN model, we can evaluate it on the test set. The following table compares the model's performance on the training, validation and test sets.
 
